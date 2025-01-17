@@ -18,7 +18,7 @@ if __name__ == "__main__":
     v1 = None
     v2 = project
 
-    while True:
+    while True: # TODO: figure out what should trigger the end of this loop
         v1 = v2 # -------------------------------------------------------------- shift the most recent version back to v1
         time.sleep(1) # -------------------------------------------------------- length of save period
 
@@ -28,6 +28,10 @@ if __name__ == "__main__":
 
         time.sleep(1)
         v2 = pyflp.parse(project_path) # --------------------------------------- retrieve new version
+
+        # TODO: Determine how often to periodically serialize the changelog data to be retrieved in java and sent to the server
+
+
 
 
 

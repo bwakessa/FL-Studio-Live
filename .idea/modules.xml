@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$USER_HOME$/Downloads/.idea/Downloads.iml" filepath="$USER_HOME$/Downloads/.idea/Downloads.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/FL-Studio-Live.iml" filepath="$PROJECT_DIR$/.idea/FL-Studio-Live.iml" />
     </modules>
   </component>
