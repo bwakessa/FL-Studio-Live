@@ -29,7 +29,7 @@ if __name__ == "__main__":
         v1 = v2 # -------------------------------------------------------------- shift the most recent version back to v1
         time.sleep(1) # -------------------------------------------------------- length of save period
 
-        fl_window = pg.getWindowsWithTitle(WINDOW_TITLE)
+        fl_window = pg.getWindowsWithTitle(WINDOW_TITLE) # TODO: Why this isnt working?
         fl_window[0].activate()
         pg.hotkey('ctrl', 's') # ----------------------------------------------- focus to fl window and save
 
