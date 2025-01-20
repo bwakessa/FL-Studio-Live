@@ -5,7 +5,12 @@ from .changelog import *
 from itertools import zip_longest
 
 class ChangeParser:
+    """Parses between versions of an FL Studio File to find changes
 
+    Attributes:
+
+
+    """
     def __init__(self):
         pass
 
@@ -28,9 +33,40 @@ class ChangeParser:
                     or note1.velocity != note2.velocity \
         else True
 
-    def _find_differences(self, note1: Note, note2: Note) -> dict[any, any]:
-        """Return a dictionary of the unequal attributes between <note1> and <note2>"""
-        pass
+    def _find_differences(self, note1: Note, note2: Note) -> dict[any, dict[any, any]]:
+        """Return a dictionary of the unequal attributes between <note1> and <note2>
+        <note1> must be from the file version before the save
+        <note2> must be from the file version after the save
+        """
+        differences = {}
+        if note1.fine_pitch != note2.fine_pitch:
+            differences["fine_pitch"] = {note1: note1.fine_pitch, note2: note2.fine_pitch}
+        if note1.group != note2.group:
+            differences["group"] = {note1: note1.group, note2: note2.group}
+        if note1.group != note2.group:
+            differences["key"] = {note1: note1.key, note2: note2.key}
+        if note1.group != note2.group:
+            differences["length"] = {note1: note1.length, note2: note2.length}
+        if note1.group != note2.group:
+            differences["midi_channel"] = {note1: note1.midi_channel, note2: note2.midi_channel}
+        if note1.group != note2.group:
+            differences["mod_x"] = {note1: note1.mod_x, note2: note2.mod_x}
+        if note1.group != note2.group:
+            differences["mod_y"] = {note1: note1.mod_y, note2: note2.mod_y}
+        if note1.group != note2.group:
+            differences["pan"] = {note1: note1.pan, note2: note2.pan}
+        if note1.group != note2.group:
+            differences["position"] = {note1: note1.position, note2: note2.position}
+        if note1.group != note2.group:
+            differences["rack_channel"] = {note1: note1.rack_channel, note2: note2.rack_channel}
+        if note1.group != note2.group:
+            differences["release"] = {note1: note1.release, note2: note2.release}
+        if note1.group != note2.group:
+            differences["slide"] = {note1: note1.slide, note2: note2.slide}
+        if note1.group != note2.group:
+            differences["velocity"] = {note1: note1.velocity, note2: note2.velocity}
+
+        return differences
 
     def merge_changelogs(self, log1: ChangeLog, log2: ChangeLog) -> ChangeLog:
         pass
@@ -58,27 +94,35 @@ class ChangeParser:
                 if v2_note:
                     v2_notes.append(v2_note)
 
-            if len(v1_notes) > len(v2_notes):
-                # deletion(s) occurred: m = len(v1) - len(unmatched_indices) (REFER TO DOCUMENTATION FOR DEFINITION OF <m>)
+            if len(v1_notes) > len(v2_notes): # deletions occurred: m = len(v1) - len(unmatched_indices) (REFER TO DOCUMENTATION FOR DEFINITION OF <m>)
                 # step 1: log len(v1) - len(v2) DELETE ChangeEntries from <unmatched_indices>, traversing backwards from its tail
-                pass
-                # for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v1_notes) - len(v2_notes)), -1):
-                #     delete_entry = ChangeLogEntry(ChangeType.DELETE, v1_notes[unmatched_indices[i]])
-                #     change_log.log(delete_entry) # TODO: implement in ChangeLog
+                for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v1_notes) - len(v2_notes)), -1):
+                    delete_entry = ChangeLogEntry(ChangeType.DELETE, v1_notes[unmatched_indices[i]])
+                    change_log.log(delete_entry) # TODO: implement in ChangeLog
 
+                # step 2: log an UPDATE ChangeEntry for the remaining len(v2) - m = len(v2) - len(v1) + len(unmatched) unmatched notes
+                for i in range(0, len(unmatched_indices) - len(v1_notes) + len(v2_notes)):
+                    updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[unmatched_indices[i]], updates)
+                    change_log.log(update_entry)
 
-                # step 2: for the remaining len(v2) - m unmatched indices, log an UPDATE ChangeEntry by comparing the notes at the indices in v1 and v2 to find differences
-                # TODO: implement method algorithm which determines differences between notes, and returns a dictionary of the changed attributes
-            elif len(v1_notes) < len(v2_notes):
-                # insertion(s) occurred: m = len(v2_notes) - len(unmatched_indices)
-                pass
-            else:
+            elif len(v1_notes) < len(v2_notes): # insertions occured: m = len(v2) - len(unmatched_indices)
+                # step 1: log len(v2) - len(v1) INSERT ChangeEntries from <unmatched_indices>, traversing backwards from its tail
+                for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v2_notes) - len(v1_notes)), -1):
+                    insert_entry = ChangeLogEntry(ChangeType.INSERT, v2_notes[unmatched_indices[i]])
+                    change_log.log(insert_entry)
+
+                # step 2: log an UPDATE ChangeEntry for the remaining len(v1) - m = len(v1) - len(v2) + len(unmatched) notes
+                for i in range(0, len(unmatched_indices) - len(v2_notes) + len(v1_notes)):
+                    updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[unmatched_indices[i]], updates)
+                    change_log.log(update_entry)
+
+            else: # (practically) no insertions or deletions occured, only updates
                 # len(v1) == len(v2)
-                pass
-
-
-
-
-
+                for i in unmatched_indices:
+                    updates = self._find_differences(v1_notes[i], v2_notes[i])
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[i], updates)
+                    change_log.log(update_entry)
 
         return change_log
