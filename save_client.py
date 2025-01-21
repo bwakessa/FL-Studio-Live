@@ -2,13 +2,13 @@ import time
 import pyautogui as pg
 import pyflp
 
-from ChangelogEntities.changeparser import ChangeParser
+from ChangelogEntities.ChangeLogEngine import ChangeLogEngine
 
 # CONSTANT VALUES
 WINDOW_TITLE = "FL Studio 20"
 
 # CONSTANT OBJECTS
-change_parser = ChangeParser()
+change_log_engine = ChangeLogEngine()
 
 if __name__ == "__main__":
     # take as input an fl studio file (chosen by the client through file explorer prompt)
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         time.sleep(1)
         v2 = pyflp.parse(project_path) # --------------------------------------- retrieve new version
 
-        change_parser.parse_changes(v1, v2)
+        change_log_engine.parse_changes(v1, v2)
         # TODO: Determine how often to periodically serialize the changelog data to be retrieved in java and sent to the server
 
         # time.sleep(x)

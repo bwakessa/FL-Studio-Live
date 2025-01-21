@@ -1,9 +1,6 @@
-from pyflp import Project
 from pyflp.pattern import Note
 
 import enum
-from itertools import zip_longest
-
 import ntplib # NTP Library
 from datetime import datetime
 
@@ -24,7 +21,7 @@ class ChangeLogEntry():
         updates: the edits to <note>'s attributes; != None iff <change_type> = UPDATE
         timestamp: the NTP time that this entry was created at; used for sort-ordering entries
     """
-    ntp_client = ntplib.NTPClient()
+    _ntp_client = ntplib.NTPClient()
     change_type: ChangeType
     note: Note
     updates: dict[any, dict[any, any]]
@@ -35,38 +32,36 @@ class ChangeLogEntry():
         self.note = note
         self.updates = updates
         try:
-            response = ntp_client.request('north-america.pool.ntp.org', version=3)
+            response = self._ntp_client.request('north-america.pool.ntp.org', version=3)
             self.timestamp = datetime.utcfromtimestamp(response.tx_time)
         except Exception as e:
             raise ntplib.NTPException("NTP request failed. {}".format(e))
 
-
 class ChangeLog():
+    """An append-only log of ChangeLogEntries.
+
+    Attributes:
+        _entries: The list of entries in this ChangeLog
     """
 
-    """
+    _entries: list[ChangeLogEntry]
+
     def __init__(self):
-        pass
+        self._entries = []
 
+    def get_entries(self) -> list[ChangeLogEntry]:
+        """Return this log's entries"""
+        return self._entries
 
-if __name__ == "__main__":
-    ntp_client = ntplib.NTPClient()
-    try:
-        r = ntp_client.request('north-america.pool.ntp.org', version=3)
-        ntp_time1 = datetime.utcfromtimestamp(r.tx_time)
-        print(ntp_time1)
+    def log(self, entry: ChangeLogEntry | list[ChangeLogEntry]) -> None:
+        """Append <entry> to this ChangeLog
 
-        r2 = ntp_client.request('north-america.pool.ntp.org', version=3)
-        ntp_time2 = datetime.utcfromtimestamp(r2.tx_time)
-        print(ntp_time2)
-
-        print(ntp_time1 > ntp_time2) # if time_a < time_b, then time_a is earlier than time_b
-    except Exception as e:
-        print("Failed: {}".format(e))
-
-
-
-
-
-
-
+        if <entry> is ChangeLogEntry, append to changelog.
+        if <entry> is list<ChangeLogEntry>, extend to changelog
+        """
+        if isinstance(entry, ChangeLogEntry):
+            self._entries.append(entry)
+        elif isinstance(entry, list):
+            self._entries.extend(entry)
+        else:
+            pass

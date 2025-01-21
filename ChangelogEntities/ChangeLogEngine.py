@@ -1,25 +1,24 @@
 from pyflp import Project
-from pyflp.pattern import Note
 from .changelog import *
 
 from itertools import zip_longest
 
-class ChangeParser:
+class ChangeLogEngine:
     """Parses between versions of an FL Studio File to find changes
 
     Attributes:
-        change_log: The changelog this changeparser is currently logging to.
+        _change_log: The changelog this changeparser is currently logging to.
     """
-    change_log: ChangeLog
+    _change_log: ChangeLog
 
     def __init__(self):
-        self.change_log = ChangeLog()
+        self._change_log = ChangeLog()
 
     def get_changelog(self) -> ChangeLog:
-        return self.change_log
+        return self._change_log
 
     def _is_equal(self, note1: Note, note2: Note) -> bool:
-        """Return note1 == note2
+        """Helper Function: Return note1 == note2
         TODO: figure out how to loop through attributes instead of doing explicit comparisons
         """
         return False if note1.fine_pitch != note2.fine_pitch \
@@ -38,9 +37,11 @@ class ChangeParser:
         else True
 
     def _find_differences(self, note1: Note, note2: Note) -> dict[str, dict[Note, any]]:
-        """Return a dictionary of the unequal attributes between <note1> and <note2>
+        """Helper Function: Return a dictionary of the unequal attributes between <note1> and <note2>
         <note1> must be from the file version before the save
         <note2> must be from the file version after the save
+
+        return: {a: {note1: note1.a, note2: note2.a}}
         """
         differences = {}
         if note1.fine_pitch != note2.fine_pitch:
@@ -73,16 +74,42 @@ class ChangeParser:
         return differences
 
     def append_changelog(self, log: ChangeLog) -> None:
-        """Append <log> to <self.change_log>
+        """Append <log> to this engine's changelog
 
-        <log>: ChangeLog to be appended to <self.change_log>
+        <log>: ChangeLog to be appended to <self._change_log>
         """
-        entries = log.get_entries() # TODO: implement this in ChangeLog
+        entries = log.get_entries()
         for entry in entries:
-            self.change_log.log(entry)
+            self._change_log.log(entry)
+
+    def merge_changelog(self, log: ChangeLog) -> None:
+        """Merge <log> with this engine's changelog, using the <ChangeLogEntry.timestamp> as the sort order
+
+        <log>: ChangeLog to be sort-merged with <self._change_log>
+        """
+        new_change_log = ChangeLog()
+        left_entries = self._change_log.get_entries()
+        right_entries = log.get_entries()
+
+        left_pointer = 0
+        right_pointer = 0
+        # basic sort-merge (not merge sort) algorithm
+        while left_pointer < len(left_entries) and right_pointer < len(right_entries):
+            if left_entries[left_pointer].timestamp < right_entries[right_pointer].timestamp: # left entry was logged earlier than right entry
+                new_change_log.log(left_entries[left_pointer])
+                left_pointer += 1
+            elif left_entries[left_pointer].timestamp > right_entries[right_pointer].timestamp: # right entry was logged earlier than left entry
+                new_change_log.log(right_entries[right_pointer])
+                right_pointer += 1
+            else: # left and right entry were logged at the exact same time
+                new_change_log.log([left_entries[left_pointer], right_entries[right_pointer]])
+                left_pointer += 1
+                right_pointer += 1
+
+        self._change_log = new_change_log
 
     def parse_changes(self, v1: Project, v2: Project) -> None:
-        """Given 2 version of an FL Studio file, determine the changes in the patterns and log them into <change_log>
+        """Given 2 version of an FL Studio file, determine the pattern changes and log them into <self._change_log>
 
         <v1>: FL Studio file object before the save
         <v2>: FL Studio file object after the save
@@ -113,7 +140,7 @@ class ChangeParser:
                 # step 1: log len(v1) - len(v2) DELETE ChangeEntries from <unmatched_indices>, traversing backwards from its tail
                 for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v1_notes) - len(v2_notes)), -1):
                     delete_entry = ChangeLogEntry(ChangeType.DELETE, v1_notes[unmatched_indices[i]])
-                    new_change_log.log(delete_entry) # TODO: implement in ChangeLog
+                    new_change_log.log(delete_entry)
 
                 # step 2: log an UPDATE ChangeEntry for the remaining len(v2) - m = len(v2) - len(v1) + len(unmatched) unmatched notes
                 for i in range(0, len(unmatched_indices) - len(v1_notes) + len(v2_notes)):
@@ -133,8 +160,7 @@ class ChangeParser:
                     update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[unmatched_indices[i]], updates)
                     new_change_log.log(update_entry)
 
-            else: # (practically) no insertions or deletions occured, only updates
-                # len(v1) == len(v2)
+            else: # (practically) no insertions or deletions occured, only updates; len(v1) == len(v2)
                 for i in unmatched_indices:
                     updates = self._find_differences(v1_notes[i], v2_notes[i])
                     update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[i], updates)
