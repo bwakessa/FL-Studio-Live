@@ -39,7 +39,8 @@ if __name__ == "__main__":
         change_parser.parse_changes(v1, v2)
         # TODO: Determine how often to periodically serialize the changelog data to be retrieved in java and sent to the server
 
-
+        # time.sleep(x)
+        # change_log = change_parser.get_changelog()
 
 
 

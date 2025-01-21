@@ -9,7 +9,6 @@ class ChangeParser:
 
     Attributes:
         change_log: The changelog this changeparser is currently logging to.
-
     """
     change_log: ChangeLog
 
@@ -73,11 +72,22 @@ class ChangeParser:
 
         return differences
 
-    def merge_changelogs(self, log1: ChangeLog, log2: ChangeLog):
-        pass
+    def append_changelog(self, log: ChangeLog) -> None:
+        """Append <log> to <self.change_log>
 
-    def parse_changes(self, v1: Project, v2: Project):
-        change_log = ChangeLog()
+        <log>: ChangeLog to be appended to <self.change_log>
+        """
+        entries = log.get_entries() # TODO: implement this in ChangeLog
+        for entry in entries:
+            self.change_log.log(entry)
+
+    def parse_changes(self, v1: Project, v2: Project) -> None:
+        """Given 2 version of an FL Studio file, determine the changes in the patterns and log them into <change_log>
+
+        <v1>: FL Studio file object before the save
+        <v2>: FL Studio file object after the save
+        """
+        new_change_log = ChangeLog()
 
         for pattern1, pattern2 in zip(v1.patterns, v2.patterns):
             # Must exhuast the generators into a data structure to determine insertions/deletions, etc.
@@ -103,31 +113,31 @@ class ChangeParser:
                 # step 1: log len(v1) - len(v2) DELETE ChangeEntries from <unmatched_indices>, traversing backwards from its tail
                 for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v1_notes) - len(v2_notes)), -1):
                     delete_entry = ChangeLogEntry(ChangeType.DELETE, v1_notes[unmatched_indices[i]])
-                    change_log.log(delete_entry) # TODO: implement in ChangeLog
+                    new_change_log.log(delete_entry) # TODO: implement in ChangeLog
 
                 # step 2: log an UPDATE ChangeEntry for the remaining len(v2) - m = len(v2) - len(v1) + len(unmatched) unmatched notes
                 for i in range(0, len(unmatched_indices) - len(v1_notes) + len(v2_notes)):
                     updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
                     update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[unmatched_indices[i]], updates)
-                    change_log.log(update_entry)
+                    new_change_log.log(update_entry)
 
             elif len(v1_notes) < len(v2_notes): # insertions occured: m = len(v2) - len(unmatched_indices)
                 # step 1: log len(v2) - len(v1) INSERT ChangeEntries from <unmatched_indices>, traversing backwards from its tail
                 for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v2_notes) - len(v1_notes)), -1):
                     insert_entry = ChangeLogEntry(ChangeType.INSERT, v2_notes[unmatched_indices[i]])
-                    change_log.log(insert_entry)
+                    new_change_log.log(insert_entry)
 
                 # step 2: log an UPDATE ChangeEntry for the remaining len(v1) - m = len(v1) - len(v2) + len(unmatched) notes
                 for i in range(0, len(unmatched_indices) - len(v2_notes) + len(v1_notes)):
                     updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
                     update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[unmatched_indices[i]], updates)
-                    change_log.log(update_entry)
+                    new_change_log.log(update_entry)
 
             else: # (practically) no insertions or deletions occured, only updates
                 # len(v1) == len(v2)
                 for i in unmatched_indices:
                     updates = self._find_differences(v1_notes[i], v2_notes[i])
                     update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[i], updates)
-                    change_log.log(update_entry)
+                    new_change_log.log(update_entry)
 
-        self.merge_changelogs(self.change_log, change_log)
+        self.append_changelog(new_change_log)
