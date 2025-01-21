@@ -8,11 +8,16 @@ class ChangeParser:
     """Parses between versions of an FL Studio File to find changes
 
     Attributes:
-
+        change_log: The changelog this changeparser is currently logging to.
 
     """
+    change_log: ChangeLog
+
     def __init__(self):
-        pass
+        self.change_log = ChangeLog()
+
+    def get_changelog(self) -> ChangeLog:
+        return self.change_log
 
     def _is_equal(self, note1: Note, note2: Note) -> bool:
         """Return note1 == note2
@@ -33,7 +38,7 @@ class ChangeParser:
                     or note1.velocity != note2.velocity \
         else True
 
-    def _find_differences(self, note1: Note, note2: Note) -> dict[any, dict[any, any]]:
+    def _find_differences(self, note1: Note, note2: Note) -> dict[str, dict[Note, any]]:
         """Return a dictionary of the unequal attributes between <note1> and <note2>
         <note1> must be from the file version before the save
         <note2> must be from the file version after the save
@@ -68,10 +73,10 @@ class ChangeParser:
 
         return differences
 
-    def merge_changelogs(self, log1: ChangeLog, log2: ChangeLog) -> ChangeLog:
+    def merge_changelogs(self, log1: ChangeLog, log2: ChangeLog):
         pass
 
-    def parse_changes(self, v1: Project, v2: Project) -> ChangeLog:
+    def parse_changes(self, v1: Project, v2: Project):
         change_log = ChangeLog()
 
         for pattern1, pattern2 in zip(v1.patterns, v2.patterns):
@@ -125,4 +130,4 @@ class ChangeParser:
                     update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[i], updates)
                     change_log.log(update_entry)
 
-        return change_log
+        self.merge_changelogs(self.change_log, change_log)

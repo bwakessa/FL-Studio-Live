@@ -29,7 +29,9 @@ class ChangeLogEntry():
         self.updates = updates
 
 class ChangeLog():
+    """
 
+    """
     def __init__(self):
         pass
 
