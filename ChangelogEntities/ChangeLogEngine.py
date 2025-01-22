@@ -21,7 +21,8 @@ class ChangeLogEngine:
         """Helper Function: Return note1 == note2
         TODO: figure out how to loop through attributes instead of doing explicit comparisons
         """
-        return False if note1.fine_pitch != note2.fine_pitch \
+        return False if not note1 or not note2 \
+                    or note1.fine_pitch != note2.fine_pitch \
                     or note1.group != note2.group \
                     or note1.key != note2.key \
                     or note1.length != note2.length \
@@ -48,27 +49,27 @@ class ChangeLogEngine:
             differences["fine_pitch"] = {note1: note1.fine_pitch, note2: note2.fine_pitch}
         if note1.group != note2.group:
             differences["group"] = {note1: note1.group, note2: note2.group}
-        if note1.group != note2.group:
+        if note1.key != note2.key:
             differences["key"] = {note1: note1.key, note2: note2.key}
-        if note1.group != note2.group:
+        if note1.length != note2.length:
             differences["length"] = {note1: note1.length, note2: note2.length}
-        if note1.group != note2.group:
+        if note1.midi_channel != note2.midi_channel:
             differences["midi_channel"] = {note1: note1.midi_channel, note2: note2.midi_channel}
-        if note1.group != note2.group:
+        if note1.mod_x != note2.mod_x:
             differences["mod_x"] = {note1: note1.mod_x, note2: note2.mod_x}
-        if note1.group != note2.group:
+        if note1.mod_y != note2.mod_y:
             differences["mod_y"] = {note1: note1.mod_y, note2: note2.mod_y}
-        if note1.group != note2.group:
+        if note1.pan != note2.pan:
             differences["pan"] = {note1: note1.pan, note2: note2.pan}
-        if note1.group != note2.group:
+        if note1.position != note2.position:
             differences["position"] = {note1: note1.position, note2: note2.position}
-        if note1.group != note2.group:
+        if note1.rack_channel != note2.rack_channel:
             differences["rack_channel"] = {note1: note1.rack_channel, note2: note2.rack_channel}
-        if note1.group != note2.group:
+        if note1.release != note2.release:
             differences["release"] = {note1: note1.release, note2: note2.release}
-        if note1.group != note2.group:
+        if note1.slide != note2.slide:
             differences["slide"] = {note1: note1.slide, note2: note2.slide}
-        if note1.group != note2.group:
+        if note1.velocity != note2.velocity:
             differences["velocity"] = {note1: note1.velocity, note2: note2.velocity}
 
         return differences
