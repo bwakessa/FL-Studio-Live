@@ -24,17 +24,18 @@ public class Server {
 	public Server(ServerSocket serverSocket) {
 		this.serverSocket = serverSocket;
 		
-		this.uniqueClientID = Server.initClientID; //starting the unique ids at 1000
 		this.connectedClients = new ArrayList<Client>();
 		this.idSet = new HashSet<>();
+		this.uniqueClientID = this.generateUniqueID(); //starting the unique ids at 1000
+		
 	}
 	
 	public void runServer() {
 		/* Starts the server. This method listens to the server socket to accept new clients.
-		 * Sends newly connected clients to a client handler to be handled in a new thread 
+		 * Sends newly connected clients to a client handler to be handled in a new thread.
 		 */		
 		try {	
-			System.out.println("Server is running!\n----------------------------------\n");
+			System.out.println("Server is running...\n----------------------------------\n");
 			while (!this.serverSocket.isClosed()) {
 				Socket clientSocket = this.serverSocket.accept(); //Block until a new client connects
 				//Client newClient = new Client(generateUniqueID(), clientSocket); //Create new client
@@ -60,6 +61,7 @@ public class Server {
 		while (true) {
 			int currId = Server.initClientID;
 			if (!this.idSet.contains(currId)) {
+				this.idSet.add(currId);
 				return currId;
 			} else {
 				currId ++;

@@ -15,6 +15,7 @@ class ChangeLogEntry():
 
     Static Attributes:
         ntp_client: client to make NTP requests. Is static so we don't spend time making one for each class instance.
+        
     Instance Attributes:
         change_type: The type of edit to the note in this entry
         note: The note being edited

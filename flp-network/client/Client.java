@@ -106,50 +106,5 @@ public class Client {
 		
 		newClient.listenForMessage();
 		newClient.startClient();
-		
-		
-//		Socket s;
-//		
-//		InputStreamReader inputStreamReader;
-//		OutputStreamWriter outputStreamWriter;
-//		
-//		BufferedReader bufferedReader;
-//		BufferedWriter bufferedWriter;
-//		
-//		try {
-//			s = new Socket("localhost", 4999);
-//			
-//			inputStreamReader = new InputStreamReader(s.getInputStream());
-//			outputStreamWriter = new OutputStreamWriter(s.getOutputStream());
-//			bufferedReader = new BufferedReader(inputStreamReader);
-//			bufferedWriter = new BufferedWriter(outputStreamWriter);
-//			
-//			Scanner in = new Scanner(System.in);
-//			
-//			while (s.isConnected()) {
-//				String msg = in.nextLine();
-//				
-//				bufferedWriter.write(msg);
-//				bufferedWriter.newLine();
-//				bufferedWriter.flush();
-//				
-//				if (msg.equalsIgnoreCase("bye")) {
-//					System.out.println("Session Ended");
-//					
-//					s.close();
-//					inputStreamReader.close();
-//					outputStreamWriter.close();
-//					bufferedReader.close();
-//					bufferedWriter.close();
-//					
-//					break;
-//				} else {
-//					String serverResponse = bufferedReader.readLine();
-//					System.out.println("Server: " + serverResponse);
-//				}			
-//			}
-//		} catch (IOException e) {
-//			System.out.println(e.getStackTrace());
-//		}
 	}
 }
