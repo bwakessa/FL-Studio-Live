@@ -14,11 +14,11 @@ changelog_engine = ChangeLogEngine()
 if __name__ == "__main__":
     # take as input an fl studio file (chosen by the client through file explorer prompt)
 
-    #desktop
-    project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\Folders\\beats\\fls\\dark melody drill.flp"
+    # Desktop
+    # project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\Folders\\beats\\fls\\dark melody drill.flp"
 
-    #laptop
-    # project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp"
+    # Laptop
+    project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp"
     project = pyflp.parse(project_path)
 
     v1 = None
@@ -32,6 +32,8 @@ if __name__ == "__main__":
         time.sleep(0.1) # -------------------------------------------------------- length of save period
 
         fl_window = pg.getWindowsWithTitle(WINDOW_TITLE) # TODO: Why this isnt working?
+        if not fl_window[0].isActive:
+            pg.press('altleft')
         fl_window[0].activate()
         pg.hotkey('ctrl', 's') # ----------------------------------------------- focus to fl window and save
 
@@ -40,11 +42,17 @@ if __name__ == "__main__":
 
         changelog_engine.parse_changes(v1, v2)
         # TODO: Determine how often to periodically serialize the changelog data to be retrieved in java and sent to the server
+        serialization_trigger += 1
 
         if serialization_trigger == 10:
             serialization_trigger = 0
-            with open("changelog.pkl", "wb") as f:
+
+            # Laptop
+            with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl", "wb") as f:
                 pickle.dump(changelog_engine, f)
+
+            # Desktop
+
 
             # run java client program through subprocess
                 # java program retrieves the pkl file and sends it to the java server program

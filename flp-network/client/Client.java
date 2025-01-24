@@ -1,33 +1,39 @@
 package client;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.Socket;
+
+import java.nio.file.*;
 import java.util.Scanner;
 
 public class Client {
 
 	private String clientID;
 	private Socket clientSocket;
+	private String changeLogPath;
+
+	private FileOutputStream fileOutputStream;
+	private InputStream inputStream;
+	private OutputStream outputStream;
+	private BufferedInputStream bufferedInputStream;
+	private BufferedOutputStream bufferedOutputStream;
 	
-	private InputStreamReader inputStreamReader;
-	private OutputStreamWriter outputStreamWriter;	
-	private BufferedReader bufferedReader;
-	private BufferedWriter bufferedWriter;
 	
-	
-	public Client(String clientID, Socket clientSocket) throws IOException {
+	public Client(String clientID, Socket clientSocket, String changeLogPath) throws IOException {
 		this.clientID = clientID;
 		this.clientSocket = clientSocket;
-		this.inputStreamReader = new InputStreamReader(this.clientSocket.getInputStream());
-		this.outputStreamWriter = new OutputStreamWriter(this.clientSocket.getOutputStream());
-		this.bufferedReader = new BufferedReader(inputStreamReader);
-		this.bufferedWriter = new BufferedWriter(outputStreamWriter);
+		this.changeLogPath = changeLogPath;
+
+		this.fileOutputStream = new FileOutputStream(this.changeLogPath);
+		this.inputStream = this.clientSocket.getInputStream();
+		this.outputStream = this.clientSocket.getOutputStream();
+		this.bufferedInputStream = new BufferedInputStream(inputStream);
+		this.bufferedOutputStream = new BufferedOutputStream(outputStream);
 	}
 
 	public String getID() {
@@ -48,23 +54,26 @@ public class Client {
 	
 	public void terminate() throws IOException {
 		this.clientSocket.close();
-		this.bufferedReader.close();
-		this.bufferedWriter.close();
+		this.bufferedInputStream.close();
+		this.bufferedOutputStream.close();
 	}
 	
-	public void startClient() throws IOException {
+	public void startClient(Client client) throws IOException {
 		try {
-			this.bufferedWriter.write(this.clientID); //Corresponds to line 33 in ClientHandler
-			this.bufferedWriter.newLine();
-			this.bufferedWriter.flush();
-			
 			Scanner in = new Scanner(System.in);
 			while (this.clientSocket.isConnected()) {
-				String msg = in.nextLine();
-				
-				bufferedWriter.write(msg);
-				bufferedWriter.newLine();
-				bufferedWriter.flush();
+				String trigger = in.nextLine();
+
+				if (trigger.equalsIgnoreCase("go")) {
+					Path path = Paths.get(this.changeLogPath);// TODO: allow the user to designate this path through the UI
+					byte[] fileData = Files.readAllBytes(path); // Get pickled changelog data
+					
+					int byteLength = 8192; //fileData.length
+					bufferedOutputStream.write(fileData, 0, byteLength); // Write changelog data to server
+					bufferedOutputStream.flush();
+
+					listenForMergedLog(client);
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -72,16 +81,19 @@ public class Client {
 		}
 	}
 	
-	public void listenForMessage() {
+	public void listenForMergedLog(Client client) {
+		// Seperate thread for this client to wait and listen for the server to send a merged changelog
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				String message;
-				
+				byte[] buffer; // 8KB buffer				
 				while (clientSocket.isConnected()) {
 					try {
-						message = bufferedReader.readLine();
-						System.out.println(message);
+						buffer = new byte[8192];
+						int bytesRead = bufferedInputStream.read(buffer); // Read merged log from socket input
+						if (bytesRead != -1) {
+							client.fileOutputStream.write(buffer, 0, bytesRead); // dump log to designated path
+						}
 					} catch (IOException e) {
 						try {
 							terminate();
@@ -102,9 +114,9 @@ public class Client {
 		
 		System.out.println("Enter a username: ");
 		String name = in.nextLine();
-		Client newClient = new Client(name, s);
+		Client newClient = new Client(name, s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
 		
-		newClient.listenForMessage();
-		newClient.startClient();
+		//newClient.listenForMergedLog(newClient);
+		newClient.startClient(newClient);
 	}
 }
