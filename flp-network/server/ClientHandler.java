@@ -33,7 +33,7 @@ public class ClientHandler implements Runnable {
 		this.clientID = this.bufferedReader.readLine(); //corresponds to line 57 in Client
 		broadcastMessage("Server: " + this.clientID + " has connected");
 	}
-
+	
 	@Override
 	public void run() {
 		try {

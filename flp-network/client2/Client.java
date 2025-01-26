@@ -27,7 +27,7 @@ public class Client {
 		this.clientSocket = clientSocket;
 		this.changeLogPath = changeLogPath;
 
-		this.fileOutputStream = new FileOutputStream(this.changeLogPath);
+		this.fileOutputStream = new FileOutputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl");
 		this.inputStream = this.clientSocket.getInputStream();
 		this.outputStream = this.clientSocket.getOutputStream();
 		this.bufferedInputStream = new BufferedInputStream(inputStream);
@@ -76,13 +76,11 @@ public class Client {
                         this.fileOutputStream.write(inputBuffer, 0, bytesRead); // dump to file
                     }
                 } else {
-                    break;
+                    this.terminate();
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {            
-            this.terminate();
         }
     }
 
@@ -92,7 +90,7 @@ public class Client {
 
         System.out.println("Enter username: ");
         String name = in.nextLine();
-        Client newClient = new Client(name, s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl");
+        Client newClient = new Client(name, s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
 
         newClient.startClient();
 		
