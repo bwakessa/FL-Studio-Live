@@ -156,7 +156,7 @@ public class Server {
                     System.out.println("Merge Algorithm finished with code: " + exitCode);
 
                     // retrieve the merged log, and broadcast it to all clients
-                    FileInputStream inputStream = new FileInputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_log.pkl");
+                    FileInputStream inputStream = new FileInputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl");
                     byte[] mergedLogBuffer = new byte[131072]; //128KB buffer;
                     int bytesRead = inputStream.read(mergedLogBuffer);
                     if (bytesRead > 0) {// broadcast merged log to all clients

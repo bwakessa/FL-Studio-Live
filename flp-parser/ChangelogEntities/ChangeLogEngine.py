@@ -15,9 +15,6 @@ class ChangeLogEngine:
     def __init__(self):
         self._change_log = ChangeLog()
 
-    def get_changelog(self) -> ChangeLog:
-        return self._change_log
-
     def _is_equal(self, note1: Note, note2: Note) -> bool:
         """Helper Function: Return note1 == note2
         TODO: figure out how to loop through attributes instead of doing explicit comparisons
@@ -74,6 +71,20 @@ class ChangeLogEngine:
             differences["velocity"] = {note1: note1.velocity, note2: note2.velocity}
 
         return differences
+    
+    
+    def get_changelog(self) -> ChangeLog:
+        """Return this engine's change log"""
+        return self._change_log
+    
+    def set_changelog(self, new_log: ChangeLog) -> None:
+        """Set this engine's change log to <new_log>"""
+        self.clear_changelog()
+        self.append_changelog(new_log)
+
+    def clear_changelog(self) -> None:
+        """Clear this engine's change log"""
+        self._change_log.clear_entries()
 
     def append_changelog(self, log: ChangeLog) -> None:
         """Append <log> to this engine's changelog
@@ -178,6 +189,9 @@ class ChangeLogEngine:
                     new_change_log.log(update_entry)
 
         self.append_changelog(new_change_log)
+    
+    def apply_changes(project_snapshot: Project) -> Project:
+        pass
 
 if __name__ == "__main__":
     """The main in this file will only be called when the java server code executes this file.
