@@ -12,31 +12,29 @@ import java.nio.file.*;
 import java.util.Scanner;
 
 public class Client {
-
-	private String clientID;
+    private String clientID;
 	private Socket clientSocket;
 	private String changeLogPath;
 
-	private FileOutputStream fileOutputStream;
+    private FileOutputStream fileOutputStream;
 	private InputStream inputStream;
 	private OutputStream outputStream;
 	private BufferedInputStream bufferedInputStream;
 	private BufferedOutputStream bufferedOutputStream;
-	
-	
-	public Client(String clientID, Socket clientSocket, String changeLogPath) throws IOException {
+
+    public Client(String clientID, Socket clientSocket, String changeLogPath) throws IOException {
 		this.clientID = clientID;
 		this.clientSocket = clientSocket;
 		this.changeLogPath = changeLogPath;
 
-		this.fileOutputStream = new FileOutputStream(this.changeLogPath);
+		this.fileOutputStream = new FileOutputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl");
 		this.inputStream = this.clientSocket.getInputStream();
 		this.outputStream = this.clientSocket.getOutputStream();
-		this.bufferedInputStream = new BufferedInputStream(inputStream);
-		this.bufferedOutputStream = new BufferedOutputStream(outputStream);
+		this.bufferedInputStream = new BufferedInputStream(this.inputStream);
+		this.bufferedOutputStream = new BufferedOutputStream(this.outputStream);
 	}
 
-	public String getID() {
+    public String getID() {
 		return this.clientID;
 	}
 	
@@ -44,12 +42,12 @@ public class Client {
 		return this.clientSocket;
 	}
 	
-	public InputStream getInputStream() throws IOException {
-		return this.clientSocket.getInputStream();
+	public BufferedInputStream getBufferedInputStream() throws IOException {
+		return this.bufferedInputStream;
 	}
 	
-	public OutputStream getOutputStream() throws IOException {
-		return this.clientSocket.getOutputStream();
+	public BufferedOutputStream getBufferedOutputStream() throws IOException {
+		return this.bufferedOutputStream;
 	}
 	
 	public void terminate() throws IOException {
@@ -57,66 +55,43 @@ public class Client {
 		this.bufferedInputStream.close();
 		this.bufferedOutputStream.close();
 	}
-	
-	public void startClient(Client client) throws IOException {
-		try {
-			Scanner in = new Scanner(System.in);
-			while (this.clientSocket.isConnected()) {
-				String trigger = in.nextLine();
 
-				if (trigger.equalsIgnoreCase("go")) {
-					Path path = Paths.get(this.changeLogPath);// TODO: allow the user to designate this path through the UI
-					byte[] fileData = Files.readAllBytes(path); // Get pickled changelog data
-					
-					int byteLength = 8192; //fileData.length
-					bufferedOutputStream.write(fileData, 0, byteLength); // Write changelog data to server
-					bufferedOutputStream.flush();
+    public void startClient() throws IOException {
+        try {
+            Scanner in = new Scanner(System.in);
+            while (this.clientSocket.isConnected()) {
+                String trigger = in.nextLine();
+                if (trigger.equalsIgnoreCase("go")) {
+                    // ---------- WRITE CHANGELOG TO SERVER ---------- //  
+                    Path path = Paths.get(this.changeLogPath); // TODO: allow the user to designate this path through the UI
+                    byte[] fileData = Files.readAllBytes(path); // Read pickled changelog data
 
-					listenForMergedLog(client);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			this.terminate();
-		}
-	}
-	
-	public void listenForMergedLog(Client client) {
-		// Seperate thread for this client to wait and listen for the server to send a merged changelog
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				byte[] buffer; // 8KB buffer				
-				while (clientSocket.isConnected()) {
-					try {
-						buffer = new byte[8192];
-						int bytesRead = bufferedInputStream.read(buffer); // Read merged log from socket input
-						if (bytesRead != -1) {
-							client.fileOutputStream.write(buffer, 0, bytesRead); // dump log to designated path
-						}
-					} catch (IOException e) {
-						try {
-							terminate();
-						} catch (IOException e1) {
-							e1.printStackTrace();
-						}
-						e.printStackTrace();
-						break;
-					}
-				}
-			}
-		}).start();
-	}
-	
-	public static void main(String[] args) throws IOException {
-		Scanner in = new Scanner(System.in);
-		Socket s = new Socket("localhost", 4999);
-		
-		System.out.println("Enter a username: ");
-		String name = in.nextLine();
-		Client newClient = new Client(name, s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
-		
-		//newClient.listenForMergedLog(newClient);
-		newClient.startClient(newClient);
-	}
+                    this.bufferedOutputStream.write(fileData, 0, fileData.length); 
+                    this.bufferedOutputStream.flush();
+
+                    // ------ READ MERGED CHANGELOG FROM SERVER ------ //
+                    byte[] inputBuffer = new byte[16384]; //16KB buffer
+                    int bytesRead = this.bufferedInputStream.read(inputBuffer); //blocking call
+                    if (bytesRead != -1) {
+                        this.fileOutputStream.write(inputBuffer, 0, bytesRead); // dump to file
+                    }
+                } else {
+                    this.terminate();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        Scanner in = new Scanner(System.in);
+        Socket s = new Socket("localhost", 4999);
+
+        System.out.println("Enter username: ");
+        String name = in.nextLine();
+        Client newClient = new Client(name, s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
+
+        newClient.startClient();        		
+    }
 }
