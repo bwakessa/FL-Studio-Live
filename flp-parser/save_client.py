@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
             # Laptop
             with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl", "wb") as f:
-                pickle.dump(changelog_engine, f)
+                pickle.dump(changelog_engine.get_changelog(), f)
 
             # Desktop
 

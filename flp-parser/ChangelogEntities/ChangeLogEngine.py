@@ -2,6 +2,7 @@ from pyflp import Project
 from .changelog import *
 
 from itertools import zip_longest
+import pickle
 
 class ChangeLogEngine:
     """Parses between versions of an FL Studio File to find changes
@@ -106,6 +107,15 @@ class ChangeLogEngine:
                 new_change_log.log([left_entries[left_pointer], right_entries[right_pointer]])
                 left_pointer += 1
                 right_pointer += 1
+        
+        if left_pointer < len(left_entries): # there remains some un-merged entries in self._change_log, but none from <log>
+            while left_pointer < len(left_entries):
+                new_change_log.log(left_entries[left_pointer])
+                left_pointer += 1
+        elif right_pointer < len(right_entries): # there remains some un-merged entries in <log>, but none from this log
+            while right_pointer < len(right_entries):
+                new_change_log.log(right_entries[right_pointer])
+                right_pointer += 1
 
         self._change_log = new_change_log
 
@@ -168,3 +178,23 @@ class ChangeLogEngine:
                     new_change_log.log(update_entry)
 
         self.append_changelog(new_change_log)
+
+if __name__ == "__main__":
+    """The main in this file will only be called when the java server code executes this file.
+       In this method is where we retrieve all the changelogs from the designated folder to be merged by ChangeLogEngine.merge_changelog()     
+    """
+    logs_to_merge_folder = "C:\\Users\\wbirm\\OneDrive\\Desktop\\premerge"
+    
+    try:
+        temp_changelog_engine = ChangeLogEngine()
+        merge_number = 0
+        while (True): # This loop will break when it encounters an error when trying to open a file that doesnt exist
+            with open(logs_to_merge_folder + "\\log{}.pkl".format(merge_number), "rb") as f:
+                new_log = pickle.load(f)
+                temp_changelog_engine.merge_changelog(new_log)
+            merge_number += 1
+    except FileExistsError as e:
+        print("Log {} not found. Saving merged log to Desktop...".format(merge_number))
+    finally:
+        with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_log.pkl", "wb") as f:
+            pickle.dump(temp_changelog_engine.get_changelog(), f)

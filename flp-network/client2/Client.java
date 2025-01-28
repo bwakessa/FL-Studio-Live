@@ -30,8 +30,8 @@ public class Client {
 		this.fileOutputStream = new FileOutputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl");
 		this.inputStream = this.clientSocket.getInputStream();
 		this.outputStream = this.clientSocket.getOutputStream();
-		this.bufferedInputStream = new BufferedInputStream(inputStream);
-		this.bufferedOutputStream = new BufferedOutputStream(outputStream);
+		this.bufferedInputStream = new BufferedInputStream(this.inputStream);
+		this.bufferedOutputStream = new BufferedOutputStream(this.outputStream);
 	}
 
     public String getID() {
@@ -42,12 +42,12 @@ public class Client {
 		return this.clientSocket;
 	}
 	
-	public InputStream getInputStream() throws IOException {
-		return this.clientSocket.getInputStream();
+	public BufferedInputStream getBufferedInputStream() throws IOException {
+		return this.bufferedInputStream;
 	}
 	
-	public OutputStream getOutputStream() throws IOException {
-		return this.clientSocket.getOutputStream();
+	public BufferedOutputStream getBufferedOutputStream() throws IOException {
+		return this.bufferedOutputStream;
 	}
 	
 	public void terminate() throws IOException {
@@ -66,12 +66,12 @@ public class Client {
                     Path path = Paths.get(this.changeLogPath); // TODO: allow the user to designate this path through the UI
                     byte[] fileData = Files.readAllBytes(path); // Read pickled changelog data
 
-                    bufferedOutputStream.write(fileData, 0, fileData.length); 
-                    bufferedOutputStream.flush();
+                    this.bufferedOutputStream.write(fileData, 0, fileData.length); 
+                    this.bufferedOutputStream.flush();
 
                     // ------ READ MERGED CHANGELOG FROM SERVER ------ //
                     byte[] inputBuffer = new byte[16384]; //16KB buffer
-                    int bytesRead = bufferedInputStream.read(inputBuffer); //blocking call
+                    int bytesRead = this.bufferedInputStream.read(inputBuffer); //blocking call
                     if (bytesRead != -1) {
                         this.fileOutputStream.write(inputBuffer, 0, bytesRead); // dump to file
                     }
@@ -92,7 +92,6 @@ public class Client {
         String name = in.nextLine();
         Client newClient = new Client(name, s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
 
-        newClient.startClient();
-		
+        newClient.startClient();        		
     }
 }
