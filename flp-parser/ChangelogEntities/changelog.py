@@ -53,6 +53,9 @@ class ChangeLog():
     def get_entries(self) -> list[ChangeLogEntry]:
         """Return this log's entries"""
         return self._entries
+    
+    def clear_entries(self) -> None:
+        self._entries = []
 
     def log(self, entry: ChangeLogEntry | list[ChangeLogEntry]) -> None:
         """Append <entry> to this ChangeLog
