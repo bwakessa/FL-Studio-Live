@@ -45,6 +45,8 @@ if __name__ == "__main__":
                 print("Failed to run client program: {}".format(client_process.stderr))
         except Exception as e:
             print(e)
+
+    time.sleep(1)
     
     # ---------- START PYTHON SNAPSHOT LOOP IF CLIENT PROGRAM IS RUNNING ---------- #
     if running_successful:
@@ -61,7 +63,7 @@ if __name__ == "__main__":
 
         serialization_trigger = 0
         while True: # TODO: figure out what should trigger the end of this loop
-                    # ^ This loop should be active only when a something (like a button) is triggered by the user.
+                    # ^ This loop should be active only when something (like a button) is triggered by the user.
 
             v1 = v2 # -------------------------------------------------------------- shift the most recent version back to v1
             time.sleep(0.1) # -------------------------------------------------------- length of save period
@@ -76,9 +78,8 @@ if __name__ == "__main__":
             v2 = pyflp.parse(project_path) # --------------------------------------- retrieve new version
 
             changelog_engine.parse_changes(v1, v2)
-            # TODO: Determine how often to periodically serialize the changelog data to be retrieved in java and sent to the server
-            serialization_trigger += 1
 
+            serialization_trigger += 1
             if serialization_trigger == 10:
                 serialization_trigger = 0
 
@@ -101,6 +102,10 @@ if __name__ == "__main__":
 
                         # ---------- SAVE PROJECT AND RESTART THE USER'S FL STUDIO ---------- #
                         pyflp.save(project, "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp") # save project
+                else:
+                    print("merge log failed...")
+                    break
+
                         
 
 

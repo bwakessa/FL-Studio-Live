@@ -61,7 +61,7 @@ public class Client {
             Scanner in = new Scanner(System.in);
             while (this.clientSocket.isConnected()) {
                 String trigger = in.nextLine();
-                if (trigger.equalsIgnoreCase("go")) {
+                if (trigger.equalsIgnoreCase("go\n")) {
                     // ---------- WRITE CHANGELOG TO SERVER ---------- //  
                     Path path = Paths.get(this.changeLogPath); // TODO: allow the user to designate this path through the UI
                     byte[] fileData = Files.readAllBytes(path); // Read pickled changelog data
@@ -74,6 +74,9 @@ public class Client {
                     int bytesRead = this.bufferedInputStream.read(inputBuffer); //blocking call
                     if (bytesRead != -1) {
                         this.fileOutputStream.write(inputBuffer, 0, bytesRead); // dump to file
+                        System.out.println("get");
+                    } else {
+                        System.out.println("failed");
                     }
                 } else {
                     this.terminate();
