@@ -1,6 +1,10 @@
 import time
 import copy
+
 import pyautogui as pg
+import tkinter as tk
+from PIL import Image, ImageTk
+
 import pyflp
 import pickle
 import subprocess
@@ -102,6 +106,22 @@ if __name__ == "__main__":
 
                         # ---------- SAVE PROJECT AND RESTART THE USER'S FL STUDIO ---------- #
                         pyflp.save(project, "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp") # save project
+
+                        screenshot = pg.screenshot() # create a screenshot of the users screen to have a more seamless restart transition
+                        screenshot_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\overlay screenshot.png"
+                        screenshot.save(screenshot_path)
+
+                        window = tk.Tk()
+                        window.attributes("-fullscreen", True, "-topmost", True)
+                        window.overrideredirect(True)
+
+                        image = Image.open(screenshot_path)
+                        photo_image = ImageTk.PhotoImage(image)
+                        label = tk.Label(window, image=photo_image)
+                        label.pack()
+
+                        ex_path = "C:\\Program Files\\Image-Line\\FL Studio 20\\FL64"
+                        subprocess.Popen([ex_path, project_path])
                 else:
                     print("merge log failed...")
                     break
