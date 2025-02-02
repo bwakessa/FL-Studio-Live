@@ -1,4 +1,4 @@
-from pyflp.pattern import Note
+from pyflp.pattern import Note, Pattern
 
 import enum
 import ntplib # NTP Library
@@ -19,17 +19,19 @@ class ChangeLogEntry():
     Instance Attributes:
         change_type: The type of edit to the note in this entry
         note: The note being edited
-        updates: the edits to <note>'s attributes; != None iff <change_type> = UPDATE
+        updates: the edits to <note>'s attributes; != None iff <change_type> != UPDATE
         timestamp: the NTP time that this entry was created at; used for sort-ordering entries
     """
     _ntp_client = ntplib.NTPClient()
     change_type: ChangeType
+    pattern: Pattern
     note: Note
     updates: dict[any, dict[any, any]]
     timestamp: datetime
 
-    def __init__(self, change_type: ChangeType, note: Note, updates: dict[any, dict[any, any]] = None):
+    def __init__(self, change_type: ChangeType, pattern: Pattern, note: Note, updates: dict[any, dict[any, any]] = None):
         self.change_type = change_type
+        self.pattern = pattern
         self.note = note
         self.updates = updates
         try:

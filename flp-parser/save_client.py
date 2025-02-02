@@ -16,40 +16,40 @@ WINDOW_TITLE = "FL Studio 20"
 changelog_engine = ChangeLogEngine()
 
 if __name__ == "__main__":
-    # ---------- COMPILE JAVA CLIENT ---------- #
-    compilation_successful = False
-    try: 
-        compile_command = ["javac", "C:\\Users\\wbirm\\FL-Studio-Live\\flp-network\\client\\Client.java"]
-        compile_process = subprocess.run(compile_command, capture_output=True, text=True)
+    # # ---------- COMPILE JAVA CLIENT ---------- #
+    # compilation_successful = False
+    # try: 
+    #     compile_command = ["javac", "C:\\Users\\wbirm\\FL-Studio-Live\\flp-network\\client\\Client.java"]
+    #     compile_process = subprocess.run(compile_command, capture_output=True, text=True)
 
-        if compile_process.returncode == 0:
-            compilation_successful = True
-        else:
-            print("Failed to compile client program: {}".format(compile_process.stderr))
-    except Exception as e:
-        print(e)
+    #     if compile_process.returncode == 0:
+    #         compilation_successful = True
+    #     else:
+    #         print("Failed to compile client program: {}".format(compile_process.stderr))
+    # except Exception as e:
+    #     print(e)
 
-    # ---------- RUN JAVA CLIENT ---------- #
-    running_successful = False
-    if compilation_successful:
-        try:
-            run_client_command = ["java", "-cp", "C:\\Users\\wbirm\\FL-Studio-Live\\flp-network", "client.Client"] 
-            client_process = subprocess.Popen(run_client_command, 
-                                            stdin=subprocess.PIPE, 
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE,
-                                            text=True)
-            if client_process.returncode == 0:
-                running_successful = True
-            else:
-                print("Failed to run client program: {}".format(client_process.stderr))
-        except Exception as e:
-            print(e)
+    # # ---------- RUN JAVA CLIENT ---------- #
+    # running_successful = False
+    # if compilation_successful:
+    #     try:
+    #         run_client_command = ["java", "-cp", "C:\\Users\\wbirm\\FL-Studio-Live\\flp-network", "client.Client"] 
+    #         client_process = subprocess.Popen(run_client_command, 
+    #                                         stdin=subprocess.PIPE, 
+    #                                         stdout=subprocess.PIPE,
+    #                                         stderr=subprocess.PIPE,
+    #                                         text=True)
+    #         if client_process.returncode == 0:
+    #             running_successful = True
+    #         else:
+    #             print("Failed to run client program: {}".format(client_process.stderr))
+    #     except Exception as e:
+    #         print(e)
 
-    time.sleep(1)
+    # time.sleep(1)
     
     # ---------- START PYTHON SNAPSHOT LOOP IF CLIENT PROGRAM IS RUNNING ---------- #
-    if running_successful:
+    if True: # running_successful:
         # Desktop:
         # project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\Folders\\beats\\fls\\dark melody drill.flp"
         # Laptop:

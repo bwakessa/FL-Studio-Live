@@ -1,8 +1,10 @@
 from pyflp import Project
+from pyflp.pattern import PatternID
 from .changelog import *
 
 from itertools import zip_longest
 import pickle
+import copy
 
 class ChangeLogEngine:
     """Parses between versions of an FL Studio File to find changes
@@ -161,37 +163,88 @@ class ChangeLogEngine:
             if len(v1_notes) > len(v2_notes): # deletions occurred: m = len(v1) - len(unmatched_indices) (REFER TO DOCUMENTATION FOR DEFINITION OF <m>)
                 # step 1: log len(v1) - len(v2) DELETE ChangeEntries from <unmatched_indices>, traversing backwards from its tail
                 for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v1_notes) - len(v2_notes)), -1):
-                    delete_entry = ChangeLogEntry(ChangeType.DELETE, v1_notes[unmatched_indices[i]])
+                    delete_entry = ChangeLogEntry(ChangeType.DELETE, pattern1, v1_notes[unmatched_indices[i]])
                     new_change_log.log(delete_entry)
 
                 # step 2: log an UPDATE ChangeEntry for the remaining len(v2) - m = len(v2) - len(v1) + len(unmatched) unmatched notes
                 for i in range(0, len(unmatched_indices) - len(v1_notes) + len(v2_notes)):
                     updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
-                    update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[unmatched_indices[i]], updates)
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1, v1_notes[unmatched_indices[i]], updates)
                     new_change_log.log(update_entry)
 
             elif len(v1_notes) < len(v2_notes): # insertions occured: m = len(v2) - len(unmatched_indices)
                 # step 1: log len(v2) - len(v1) INSERT ChangeEntries from <unmatched_indices>, traversing backwards from its tail
                 for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v2_notes) - len(v1_notes)), -1):
-                    insert_entry = ChangeLogEntry(ChangeType.INSERT, v2_notes[unmatched_indices[i]])
+                    insert_entry = ChangeLogEntry(ChangeType.INSERT, pattern1, v2_notes[unmatched_indices[i]])
                     new_change_log.log(insert_entry)
 
                 # step 2: log an UPDATE ChangeEntry for the remaining len(v1) - m = len(v1) - len(v2) + len(unmatched) notes
                 for i in range(0, len(unmatched_indices) - len(v2_notes) + len(v1_notes)):
                     updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
-                    update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[unmatched_indices[i]], updates)
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1, v1_notes[unmatched_indices[i]], updates)
                     new_change_log.log(update_entry)
 
             else: # (practically) no insertions or deletions occured, only updates; len(v1) == len(v2)
                 for i in unmatched_indices:
                     updates = self._find_differences(v1_notes[i], v2_notes[i])
-                    update_entry = ChangeLogEntry(ChangeType.UPDATE, v1_notes[i], updates)
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1, v1_notes[i], updates)
                     new_change_log.log(update_entry)
 
         self.append_changelog(new_change_log)
+
+    def _update_note(self, note: Note, updates: dict[any, dict[any, any]]) -> None: 
+        if "fine_pitch" in updates:
+            note.fine_pitch = updates["fine_pitch"].values[1]
+        if "group" in updates:
+            note.group = updates["group"].values[1]
+        if "key" in updates:
+            note.key = updates["key"].values[1]
+        if "length" in updates:
+            note.length = updates["key"].values[1]
+        if "midi_channel" in updates:
+            note.midi_channel = updates["midi_channel"].values[1]
+        if "mod_x" in updates:
+            note.mod_x = updates["mod_x"].values[1]
+        if "mod_y" in updates:
+            note.mod_y = updates["mod_y"].values[1]
+        if "pan" in updates:
+            note.pan = updates["pan"].values[1]
+        if "position" in updates:
+            note.position = updates["position"].values[1]
+        if "rack_channel" in updates:
+            note.rack_channel = updates["rack_channel"].values[1]
+        if "release" in updates:
+            note.release = updates["release"].values[1]
+        if "slide" in updates:
+            note.slide = updates["slide"].values[1]
+        if "velocity" in updates:
+            note.velocity = updates["velocity"].values[1]
     
-    def apply_changes(project_snapshot: Project) -> Project:
-        pass
+    def apply_changes(self, project_snapshot: Project) -> Project:
+        for edit in self._change_log.get_entries():            
+            # Retrieve the Notes Event of <edit.pattern>
+            pattern_to_update = None
+            for pattern in project_snapshot.patterns:
+                if pattern.name == edit.pattern.name:
+                    pattern_to_update = pattern
+            
+            notes_event = pattern_to_update.events.first(PatternID.Notes)          
+            if notes_event:
+                if edit.change_type == ChangeType.INSERT:
+                    notes_event.append(edit.note)
+                elif edit.change_type == ChangeType.DELETE:
+                    notes_event.remove(edit.note)
+                else: # UPDATE
+                    for note in notes_event.data:
+                        if self._is_equal(note, edit.note): # TODO: debug whether memory address of <note> and <edit.note> are equal
+                            self._update_note(note, edit.updates)
+                            break        
+        return project_snapshot
+                    
+
+    
+    
+        
 
 if __name__ == "__main__":
     """The main in this file will only be called when the java server code executes this file.
