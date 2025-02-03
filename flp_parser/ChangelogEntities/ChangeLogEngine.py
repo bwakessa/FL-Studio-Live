@@ -17,14 +17,27 @@ class ChangeLogEngine:
     def __init__(self):
         self._change_log = ChangeLog()
 
-    def _is_equal(self, note1: Note, note2: Note) -> bool:
+    def _is_equal(self, note1, note2) -> bool:
         """Helper Function: Return note1 == note2
         TODO: figure out how to loop through attributes instead of doing explicit comparisons
         """
+        key_letter = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11}
+
+        if note1 and note2:
+            keys_are_equal = False
+            if isinstance(note1.key, str) and isinstance(note2.key, str):
+                keys_are_equal = True if note1.key == note2.key else False
+            elif isinstance(note1.key, str):
+                keys_are_equal = True if (12*int(note1.key[-1]) + key_letter[note1.key[:-1]]) == note2.key else False
+            elif isinstance(note2.key, str):
+                keys_are_equal = True if note1.key == (12*int(note2.key[-1]) + key_letter[note2.key[:-1]]) else False
+            else:
+                keys_are_equal = True if note1.key == note2.key else False
+
         return False if not note1 or not note2 \
                     or note1.fine_pitch != note2.fine_pitch \
                     or note1.group != note2.group \
-                    or note1.key != note2.key \
+                    or not keys_are_equal \
                     or note1.length != note2.length \
                     or note1.midi_channel != note2.midi_channel \
                     or note1.mod_x != note2.mod_x \
@@ -33,7 +46,6 @@ class ChangeLogEngine:
                     or note1.position != note2.position \
                     or note1.rack_channel != note2.rack_channel \
                     or note1.release != note2.release \
-                    or note1.slide != note2.slide \
                     or note1.velocity != note2.velocity \
         else True
 
@@ -193,32 +205,38 @@ class ChangeLogEngine:
         self.append_changelog(new_change_log)
 
     def _update_note(self, note: Note, updates: dict[any, dict[any, any]]) -> None: 
+        key_letter = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11}
+
         if "fine_pitch" in updates:
-            note.fine_pitch = updates["fine_pitch"].values[1]
+            note.fine_pitch = list(updates["fine_pitch"].values())[1]
         if "group" in updates:
-            note.group = updates["group"].values[1]
+            note.group = list(updates["group"].values())[1]
         if "key" in updates:
-            note.key = updates["key"].values[1]
+            if isinstance(note.key, str):
+                note.key = list(updates["key"].values())[1]
+            else:
+                k = list(updates["key"].values())[1]
+                note.key = 12*int(k[-1]) + key_letter[k[:-1]]
         if "length" in updates:
-            note.length = updates["key"].values[1]
+            note.length = list(updates["length"].values())[1]
         if "midi_channel" in updates:
-            note.midi_channel = updates["midi_channel"].values[1]
+            note.midi_channel = list(updates["midi_channel"].values())[1]
         if "mod_x" in updates:
-            note.mod_x = updates["mod_x"].values[1]
+            note.mod_x = list(updates["mod_x"].values())[1]
         if "mod_y" in updates:
-            note.mod_y = updates["mod_y"].values[1]
+            note.mod_y = list(updates["mod_y"].values())[1]
         if "pan" in updates:
-            note.pan = updates["pan"].values[1]
+            note.pan = list(updates["pan"].values())[1]
         if "position" in updates:
-            note.position = updates["position"].values[1]
+            note.position = list(updates["position"].values())[1]
         if "rack_channel" in updates:
-            note.rack_channel = updates["rack_channel"].values[1]
+            note.rack_channel = list(updates["rack_channel"].values())[1]
         if "release" in updates:
-            note.release = updates["release"].values[1]
+            note.release = list(updates["release"].values())[1]
         if "slide" in updates:
-            note.slide = updates["slide"].values[1]
+            note.slide = list(updates["slide"].values())[1]
         if "velocity" in updates:
-            note.velocity = updates["velocity"].values[1]
+            note.velocity = list(updates["velocity"].values())[1]
     
     def apply_changes(self, project_snapshot: Project) -> Project:
         for edit in self._change_log.get_entries():            
@@ -227,19 +245,28 @@ class ChangeLogEngine:
             for pattern in project_snapshot.patterns:
                 if pattern.name == edit.pattern.name:
                     pattern_to_update = pattern
-            
+                    break
             notes_event = pattern_to_update.events.first(PatternID.Notes)          
             if notes_event:
                 if edit.change_type == ChangeType.INSERT:
                     notes_event.append(edit.note)
                 elif edit.change_type == ChangeType.DELETE:
-                    notes_event.remove(edit.note)
+                    self._remove_note(notes_event, edit.note)
                 else: # UPDATE
                     for note in notes_event.data:
                         if self._is_equal(note, edit.note): # TODO: debug whether memory address of <note> and <edit.note> are equal
                             self._update_note(note, edit.updates)
                             break        
         return project_snapshot
+    
+    def _remove_note(self, event, note: Note) -> None:
+        for e in event.data:
+            if self._is_equal(e, note):
+                event.remove(e)
+                break
+        
+
+
                     
 
     
