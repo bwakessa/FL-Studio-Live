@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # ---------- COMPILE JAVA CLIENT ---------- #
     compilation_successful = False
     try: 
-        compile_command = ["javac", "C:\\Users\\wbirm\\FL-Studio-Live\\flp-network\\client\\Client.java"]
+        compile_command = ["javac", "C:\\Users\\wbirm\\FL-Studio-Live\\flp_network\\client\\Client.java"]
         compile_process = subprocess.run(compile_command, capture_output=True, text=True)
 
         if compile_process.returncode == 0:
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     running_successful = False
     if compilation_successful:
         try:
-            run_client_command = ["java", "-cp", "C:\\Users\\wbirm\\FL-Studio-Live\\flp-network", "client.Client"] 
+            run_client_command = ["java", "-cp", "C:\\Users\\wbirm\\FL-Studio-Live\\flp_network", "client.Client"] 
             client_process = subprocess.Popen(run_client_command, 
                                             stdin=subprocess.PIPE, 
                                             stdout=subprocess.PIPE,

@@ -91,7 +91,7 @@ public class Client {
         Scanner in = new Scanner(System.in);
         Socket s = new Socket("localhost", 4999);
 
-        System.out.println("Enter username: ");
+        // System.out.println("Enter username: ");
         String name = in.nextLine();
         Client newClient = new Client(name, s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
 
