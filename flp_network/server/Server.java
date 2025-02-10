@@ -176,6 +176,7 @@ public class Server {
                             if (bytesRead > 0) {
                                 this.broadcastToClients(Arrays.copyOfRange(mergedLogBuffer, 0, bytesRead));
                             }
+                            inputStream.close();
                         }                        
                     }
                 }

@@ -18,9 +18,6 @@ class ChangeType(enum.Enum):
 
 class ChangeLogEntry():
     """An entry of a ChangeLog representing a single edit of a note
-
-    Static Attributes:
-        ntp_client: client to make NTP requests. Is static so we don't spend time making one for each class instance.
         
     Instance Attributes:
         change_type: The type of edit to the note in this entry
@@ -28,7 +25,6 @@ class ChangeLogEntry():
         updates: the edits to <note>'s attributes; != None iff <change_type> != UPDATE
         timestamp: the NTP time that this entry was created at; used for sort-ordering entries
     """
-    # _ntp_client = ntplib.NTPClient()
     change_type: ChangeType
     pattern_name: str
     note: Note
@@ -41,11 +37,6 @@ class ChangeLogEntry():
         self.note = note
         self.updates = updates
         self.timestamp = datetime.now()
-        # try:
-        #     response = self._ntp_client.request('north-america.pool.ntp.org', version=3)
-        #     self.timestamp = datetime.utcfromtimestamp(response.tx_time)
-        # except Exception as e:
-        #     raise ntplib.NTPException("NTP request failed. {}".format(e))
 
 class ChangeLog():
     """An append-only log of ChangeLogEntries.
@@ -327,7 +318,7 @@ class ChangeLogEngine:
                     self._remove_note(notes_event, edit.note)
                 else: # UPDATE
                     for note in notes_event.data:
-                        if self._is_equal(note, edit.note): # TODO: debug whether memory address of <note> and <edit.note> are equal
+                        if self._is_equal(note, edit.note): 
                             self._update_note(note, edit.updates)
                             break        
         return project_snapshot

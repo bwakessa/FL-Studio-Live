@@ -70,7 +70,7 @@ public class Client {
                     this.bufferedOutputStream.flush();
 
                     // ------ READ MERGED CHANGELOG FROM SERVER ------ //
-                    byte[] inputBuffer = new byte[67108864]; //64Mb buffer
+                    byte[] inputBuffer = new byte[67108864]; //64MB buffer
                     int bytesRead = this.bufferedInputStream.read(inputBuffer); //blocking call
                     if (bytesRead != -1) {
                         this.fileOutputStream.write(inputBuffer, 0, bytesRead); // dump to file
@@ -90,15 +90,10 @@ public class Client {
     public static void main(String[] args) throws IOException {
         Scanner in = new Scanner(System.in);
 
-        //String ip = "192.168.2.20"; // home ip address
-        String ip = "192.168.2.122"; // newman centre ip address
-        //String ip = "10.0.0.253"; // boras place
+        String ip = "bruh"; // home ip address
         Socket s = new Socket(ip, 5000);
 
-        // System.out.println("Enter username: ");
-        // String name = in.nextLine();
-        Client newClient = new Client("poop", s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
-
+        Client newClient = new Client("bruh", s, "C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl");
         newClient.startClient();        		
     }
 }
