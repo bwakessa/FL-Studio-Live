@@ -1,10 +1,8 @@
 import time
-
+import pyautogui as pg
 import pyflp
 import pickle
 import subprocess
-
-# CODON AND CYTHON
 
 from ChangeLogEngine import ChangeLogEngine
 
@@ -38,7 +36,7 @@ if __name__ == "__main__":
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE,
                                             text=True)
-            if not client_process.returncode: # returncode for Popen is initially None, isntead of 0, on success
+            if not client_process.returncode: # returncode for Popen is initially None, instead of 0, on success
                 running_successful = True
             else:
                 print("Failed to run client program: {}".format(client_process.stderr))
@@ -49,10 +47,7 @@ if __name__ == "__main__":
     
     # ---------- START PROJECT SNAPSHOT LOOP IF CLIENT PROGRAM IS RUNNING ---------- #
     if True: # running_successful:
-        # Desktop:
-        # project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\Folders\\beats\\fls\\dark melody drill.flp"
-        # Laptop:
-        project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp"
+        project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp" # TODO
 
         project = pyflp.parse(project_path)
         project_snapshot = pyflp.parse(project_path) # this is the snapshot we will implement the changes in the changelog to
@@ -61,26 +56,20 @@ if __name__ == "__main__":
         v2 = project
 
         serialization_trigger = 0
-        while True: # TODO: figure out what should trigger the end of this loop
-                    # ^ This loop should be active only when something (like a button) is triggered by the user.
+        while True: # TODO: This loop should be active only when something (like a button) is triggered by the user.
+            v1 = v2 # -------------------------------------------------------------- shift the most recent version back to v1            
+            time.sleep(0.5) # -------------------------------------------------------- length of save period
 
-            v1 = v2 # -------------------------------------------------------------- shift the most recent version back to v1
-            print("2 seconds to make a change")
-            #time.sleep(2) # -------------------------------------------------------- length of save period
+            fl_window = pg.getWindowsWithTitle(WINDOW_TITLE) # TODO: Why this isnt working?
+            if not fl_window[0].isActive:
+               pg.press('altleft')
+            fl_window[0].activate()
+            pg.hotkey('ctrl', 's') # ----------------------------------------------- focus to fl window and save
 
-            #fl_window = pg.getWindowsWithTitle(WINDOW_TITLE) # TODO: Why this isnt working?
-            #if not fl_window[0].isActive:
-            #    pg.press('altleft')
-            #fl_window[0].activate()
-            #pg.hotkey('ctrl', 's') # ----------------------------------------------- focus to fl window and save
-
-            #time.sleep(0.5)
+            time.sleep(0.5)
             v2 = pyflp.parse(project_path) # --------------------------------------- retrieve new version
 
             changelog_engine.parse_changes(v1, v2)
-            print("2 seconds to revert the change")
-            #time.sleep(2)
-
             serialization_trigger += 1
             if serialization_trigger == 1:
                 serialization_trigger = 0
@@ -88,13 +77,8 @@ if __name__ == "__main__":
                 # Laptop
                 with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\changelog.pkl", "wb") as f:
                     pickle.dump(changelog_engine.get_changelog(), f)
-                # Desktop
-                # ---
 
                 output, error = client_process.communicate("go\n", timeout=60)
-                #client_process.stdin.write("go\n") # Send trigger to the client to send changelog to server   
-                #print(client_process.stderr.read().strip())             
-                #retrieve_trigger = client_process.stdout.readline() #
 
                 if output == "get\n":  
                     with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl", "rb") as f:
@@ -112,3 +96,4 @@ if __name__ == "__main__":
                 else:
                     print("merge log failed...")
                     break
+
