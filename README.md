@@ -24,3 +24,6 @@ Current Fixes:
     - Let user select directories of fl studio file and changelogs
     - Fix loop to me triggered by UI
 
+Future Expansions:
+- Support for playlists
+- Support for arrangements
