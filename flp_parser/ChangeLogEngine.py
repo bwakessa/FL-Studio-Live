@@ -338,31 +338,3 @@ class ChangeLogEngine:
                 event.remove(e)
                 break
         
-
-temp_changelog_engine = ChangeLogEngine()
-if __name__ == "__main__":
-    """The main in this file will only be called when the java server code executes this file.
-       In this method is where we retrieve all the changelogs from the designated folder to be merged by ChangeLogEngine.merge_changelog()     
-    """
-    # sys.modules["ChangeLogEngine"] = sys.modules["__main__"] # attempt to fix unpickling module conflict error
-    logs_to_merge_folder = "C:\\Users\\wbirm\\OneDrive\\Desktop\\premerge"
-    num_files = 0
-    for path in os.listdir(logs_to_merge_folder):
-        if os.path.isfile(os.path.join(logs_to_merge_folder, path)):
-            num_files += 1
-    
-    
-    # ChangeLogEngine.__module__ = "ChangeLogEngine" # attempt to fix unpickling module conflict error
-    merge_number = 0
-    try:
-        while merge_number < num_files:
-            with open(logs_to_merge_folder + "\\log{}.pkl".format(merge_number), "rb") as f:
-                new_log = pickle.load(f) 
-                temp_changelog_engine.merge_changelog(new_log)
-                merge_number += 1
-        
-        with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_log.pkl", "wb") as f:              
-                pickle.dump(temp_changelog_engine.get_changelog(), f)
-    except FileExistsError as e:
-        print("bruh wtf")
-
