@@ -1,7 +1,6 @@
 import pyflp
 
-from ChangelogEntities.ChangeLogEngine import *
-from ChangelogEntities.changelog import *
+from flp_parser.ChangeLogEngine import *
 
 project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\Folders\\beats\\fls\\dark melody drill.flp"
 # ------------------------------ ChangeLogEngine ------------------------------ #

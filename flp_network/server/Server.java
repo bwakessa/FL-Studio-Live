@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-
+import java.io.BufferedReader;
 // INTER-THREAD COMMUNICATION IMPORTS
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.Selector;
@@ -26,11 +26,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import client.Client;
-
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Iterator;
 
@@ -43,7 +41,7 @@ public class Server {
         this.connectedClients = new ArrayList<>();
     }
 
-    private void listenForClients(ServerSocket serverSocket, BlockingQueue<Socket> threadPipe) {
+    private void listenForClients(BlockingQueue<Socket> threadPipe) {
         /* - Solution: Use a thread-safe queue between the two threads.
                      Similar to inter-process communication using pipe() fork() in C, 
                      use a producer/consumer queue between the two threads. 
@@ -54,13 +52,24 @@ public class Server {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                try {
+                try (ServerSocketChannel listeningChannel = ServerSocketChannel.open()) { 
+                    //listeningChannel.configureBlocking(false);
+                    listeningChannel.bind(new InetSocketAddress(5000));    
+                    listeningChannel.configureBlocking(false);
+                    Selector listeningSelector = Selector.open();
+                    listeningChannel.register(listeningSelector, SelectionKey.OP_ACCEPT);
                     while (true) {
-                        Socket newClient = serverSocket.accept(); //Block this thread to wait for a new client connection
-                        threadPipe.put(newClient); //Send new client through the thread queue
+                        listeningSelector.select(); //Block this thread to wait for a new client connection  
+                        for (SelectionKey key : listeningSelector.selectedKeys()) {
+                            if (key.isAcceptable()) {
+                                SocketChannel clientChannel = listeningChannel.accept();
+                                Socket newClient = clientChannel.socket();
+                                threadPipe.put(newClient); //Send new client through the thread queue
+                            }
+                        }               
                     }
                 } catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
+                    e.printStackTrace();                    
                 }
             }
         }).start();
@@ -74,15 +83,25 @@ public class Server {
             @Override
             public void run() {
                 try {
-                    BufferedOutputStream bos = new BufferedOutputStream(clientSocket.getOutputStream());
-                    bos.write(mergedLog);
-                    bos.flush();
-                    bos.close();
+                    //BufferedOutputStream bos = new BufferedOutputStream(clientSocket.getOutputStream());
+                    //bos.write(mergedLog);
+                   // bos.flush();
+
+                    SocketChannel clientChannel = clientSocket.getChannel();
+
+                    ByteBuffer mergelogbuffer = ByteBuffer.wrap(mergedLog);
+                    //System.out.println("got here 1");
+                    while (mergelogbuffer.hasRemaining()) {
+                       // System.out.println("got here 2");
+                        clientChannel.write(mergelogbuffer);
+                       // System.out.println("got here 3");
+                    }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 } 
             }
-        }).start();
+        }).start();        
     }
 
     private void broadcastToClients(byte[] mergedLog) {
@@ -99,68 +118,105 @@ public class Server {
         try {
             Selector selector = Selector.open(); 
 
-            ServerSocketChannel serverChannel = ServerSocketChannel.open(); // Create and configure server channel for selector
-            serverChannel.bind(new InetSocketAddress(this.serverSocket.getLocalPort()));
-            serverChannel.configureBlocking(false);
+            ServerSocketChannel serverChannel = this.serverSocket.getChannel(); // Create and configure server channel for selector
+            //serverChannel.bind(this.serverSocket.getLocalSocketAddress());
+            //serverChannel.configureBlocking(false);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
             BlockingQueue<Socket> threadPipe = new LinkedBlockingQueue<>(); // Thread pipe for inter-thread communication
-            this.listenForClients(serverSocket, threadPipe); // Separate thread for receiving incoming clients
+            this.listenForClients(threadPipe); // Separate thread for receiving incoming clients
 
             while (!this.serverSocket.isClosed()) {                
-                Socket newClient = threadPipe.poll(2, TimeUnit.SECONDS); //wait 2 seconds to dequeue new client
+                Socket newClient = threadPipe.poll(5, TimeUnit.SECONDS); //wait 2 seconds to dequeue new client
                 if (newClient != null) {
-                    SocketChannel clientChannel = SocketChannel.open();
-                    clientChannel.bind(new InetSocketAddress(newClient.getPort()));
+                    SocketChannel clientChannel = newClient.getChannel();//SocketChannel.open();
+                    //clientChannel.bind(new InetSocketAddress(newClient.getPort()));
                     clientChannel.configureBlocking(false);
                     clientChannel.register(selector, SelectionKey.OP_READ);
                     this.connectedClients.add(newClient); // add new client to list of connected clients
                 }
-
-                selector.select(); // Use the <select> mechanism to check whether a client has sent new change data.
-                Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                Iterator<SelectionKey> iterator = selectedKeys.iterator();
-
-                ArrayList<byte[]> changeLogs = new ArrayList<>();
-                while (iterator.hasNext()) {
-                    SelectionKey key = iterator.next();
-                    iterator.remove();
-
-                    if (key.isReadable()) { // data is available to be read from this channel
-                        SocketChannel clientChannel = (SocketChannel) key.channel();
-                        // read and store pkl data
-                        ByteBuffer inputBuffer = ByteBuffer.allocate(16384); //16KB buffer
-                        int bytesRead = clientChannel.read(inputBuffer);
-                        if (bytesRead > 0) {
-                            inputBuffer.flip();
-                            changeLogs.add(inputBuffer.array());
-                        }
-                    } else {;}
-                }
                 
-                if (changeLogs.size() > 0) {
-                    // Write each byte array to a seperate pickle file in a designated folder
-                    int merge_number = 0;
-                    for (byte[] changelog: changeLogs) {
-                        FileOutputStream outputStream = new FileOutputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\premerge\\log" + merge_number + ".pkl");
-                        outputStream.write(changelog, 0, changelog.length);
-                        merge_number ++;
-                        outputStream.close();
+                System.out.println("There are " + connectedClients.size() + " clients");
+                //TimeUnit.SECONDS.sleep(2);
+
+                if (connectedClients.size() >= 1) {
+                    selector.select(); // Use the <select> mechanism to check whether a client has sent new change data.
+                    System.out.println("there are " + selector.selectedKeys().size() + " keys");
+                    Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                    Iterator<SelectionKey> iterator = selectedKeys.iterator();
+
+                    //ArrayList<byte[]> changeLogs = new ArrayList<>();
+                    HashMap<byte[], Integer> changeLogs = new HashMap<>();
+                    while (iterator.hasNext()) {
+                        SelectionKey key = iterator.next();
+                        iterator.remove();
+
+                        if (key.isReadable()) { // data is available to be read from this channel
+                            SocketChannel clientChannel = (SocketChannel) key.channel();
+                            // read and store pkl data
+                            ByteBuffer inputBuffer = ByteBuffer.allocate(67108864); //64MB buffer
+                            
+                            int bytesRead = clientChannel.read(inputBuffer);
+                            while (bytesRead > 0) {
+                                bytesRead = clientChannel.read(inputBuffer);
+                            }
+                            
+                            if (bytesRead >= 0) {
+                                int bufferPosition = inputBuffer.position();
+                                inputBuffer.flip();
+                                changeLogs.put(inputBuffer.array(), bufferPosition);
+                                //changeLogs.add(inputBuffer.array());
+                            }
+                        } else {;}
                     }
 
-                    // call the merge algorithm in python
-                    String[] args = {"python", "C:/Users/wbirm/FL-Studio-Live/flp-parser/save_client.py"};
-                    Process mergeAlgorithm = Runtime.getRuntime().exec(args);
+                    System.out.println("There are " + changeLogs.size() + " changelogs...");
+                    //TimeUnit.SECONDS.sleep(2);
 
-                    int exitCode = mergeAlgorithm.waitFor();
-                    System.out.println("Merge Algorithm finished with code: " + exitCode);
+                    if (changeLogs.size() > 0) {
+                        // Write each byte array to a seperate pickle file in a designated folder
+                        int merge_number = 0;
+                        for (byte[] changelog: changeLogs.keySet()) {
+                            
+                            System.out.println("Writing changelog " + merge_number + " to pc");
+                            //TimeUnit.SECONDS.sleep(2);
 
-                    // retrieve the merged log, and broadcast it to all clients
-                    FileInputStream inputStream = new FileInputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl");
-                    byte[] mergedLogBuffer = new byte[131072]; //128KB buffer;
-                    int bytesRead = inputStream.read(mergedLogBuffer);
-                    if (bytesRead > 0) {// broadcast merged log to all clients
-                        this.broadcastToClients(Arrays.copyOfRange(mergedLogBuffer, 0, bytesRead));
+                            FileOutputStream outputStream = new FileOutputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\premerge\\log" + merge_number + ".pkl");
+                            outputStream.write(changelog, 0, changeLogs.get(changelog));
+                            merge_number ++;
+                            outputStream.close();
+                        }
+                        
+                        System.out.println("Calling the python merge algorithm in 2 seconds...");
+                        //TimeUnit.SECONDS.sleep(2);
+
+                        // call the merge algorithm in python
+                        String[] args = {"python", "C:\\Users\\wbirm\\FL-Studio-Live\\flp_parser\\merge_logs.py"};
+                        Process mergeAlgorithm = Runtime.getRuntime().exec(args);
+
+                        System.out.println("Merge algorithm called; Now waiting for merge algorithm to finish...");
+
+                        int exitCode = mergeAlgorithm.waitFor();
+                        
+                        if (exitCode != 0) {
+                            System.out.println("Merge Algorithm finished with code: " + exitCode);
+                            BufferedReader errorReader = mergeAlgorithm.errorReader(); 
+                            String errline = errorReader.readLine();
+                            while (errline != null) {
+                                System.out.println("Error: " + errline);
+                                errline = errorReader.readLine();
+                            }
+                        }
+                        System.out.println("Merge Algorithm finished with code: " + exitCode);
+
+                        // retrieve the merged log, and broadcast it to all clients
+                        FileInputStream inputStream = new FileInputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_log.pkl");
+                        //FileInputStream inputStream = new FileInputStream("C:\\Users\\wbirm\\OneDrive\\Desktop\\premerge\\log0.pkl");
+                        byte[] mergedLogBuffer = new byte[67108864]; //64MB buffer;
+                        int bytesRead = inputStream.read(mergedLogBuffer);
+                        if (bytesRead > 0) {// broadcast merged log to all clients
+                            this.broadcastToClients(Arrays.copyOfRange(mergedLogBuffer, 0, bytesRead));
+                        }
                     }
                 }
             }
@@ -172,7 +228,11 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException{
-        ServerSocket serverSocket = new ServerSocket(4999);
+        ServerSocketChannel serverChannel = ServerSocketChannel.open();
+        serverChannel.configureBlocking(false);
+        serverChannel.bind(new InetSocketAddress(4999));
+
+        ServerSocket serverSocket = serverChannel.socket();
         Server server = new Server(serverSocket);
         server.runServer();
     }

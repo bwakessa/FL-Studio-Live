@@ -3,8 +3,7 @@ Test whether changelog engine properly keeps tracks of changes, and applies chan
 """
 import pyflp
 import copy
-from ChangelogEntities.ChangeLogEngine import *
-from ChangelogEntities.changelog import *
+from flp_parser.ChangeLogEngine import *
 
 project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp"
 

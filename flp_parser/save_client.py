@@ -1,9 +1,4 @@
 import time
-import copy
-
-import pyautogui as pg
-import tkinter as tk
-from PIL import Image, ImageTk
 
 import pyflp
 import pickle
@@ -11,7 +6,7 @@ import subprocess
 
 # CODON AND CYTHON
 
-from ChangelogEntities.ChangeLogEngine import ChangeLogEngine
+from ChangeLogEngine import ChangeLogEngine
 
 # CONSTANT VALUES
 WINDOW_TITLE = "FL Studio 20"
@@ -60,7 +55,7 @@ if __name__ == "__main__":
         project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp"
 
         project = pyflp.parse(project_path)
-        project_snapshot = copy.deepcopy(project) # this is the snapshot we will implement the changes in the changelog to
+        project_snapshot = pyflp.parse(project_path) # this is the snapshot we will implement the changes in the changelog to
 
         v1 = None
         v2 = project
@@ -70,21 +65,24 @@ if __name__ == "__main__":
                     # ^ This loop should be active only when something (like a button) is triggered by the user.
 
             v1 = v2 # -------------------------------------------------------------- shift the most recent version back to v1
-            time.sleep(0.1) # -------------------------------------------------------- length of save period
+            print("2 seconds to make a change")
+            #time.sleep(2) # -------------------------------------------------------- length of save period
 
-            fl_window = pg.getWindowsWithTitle(WINDOW_TITLE) # TODO: Why this isnt working?
-            if not fl_window[0].isActive:
-                pg.press('altleft')
-            fl_window[0].activate()
-            pg.hotkey('ctrl', 's') # ----------------------------------------------- focus to fl window and save
+            #fl_window = pg.getWindowsWithTitle(WINDOW_TITLE) # TODO: Why this isnt working?
+            #if not fl_window[0].isActive:
+            #    pg.press('altleft')
+            #fl_window[0].activate()
+            #pg.hotkey('ctrl', 's') # ----------------------------------------------- focus to fl window and save
 
-            time.sleep(0.5)
+            #time.sleep(0.5)
             v2 = pyflp.parse(project_path) # --------------------------------------- retrieve new version
 
             changelog_engine.parse_changes(v1, v2)
+            print("2 seconds to revert the change")
+            #time.sleep(2)
 
             serialization_trigger += 1
-            if serialization_trigger == 10:
+            if serialization_trigger == 1:
                 serialization_trigger = 0
 
                 # Laptop
@@ -93,57 +91,24 @@ if __name__ == "__main__":
                 # Desktop
                 # ---
 
-                client_process.stdin.write("go\n") # Send trigger to the client to send changelog to server
-                retrieve_trigger = client_process.stdout.readline() #
+                output, error = client_process.communicate("go\n", timeout=60)
+                #client_process.stdin.write("go\n") # Send trigger to the client to send changelog to server   
+                #print(client_process.stderr.read().strip())             
+                #retrieve_trigger = client_process.stdout.readline() #
 
-                if retrieve_trigger == "get":  
+                if output == "get\n":  
                     with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_changelog.pkl", "rb") as f:
                         merged_log = pickle.load(f) # retrieve the merged log
 
                         changelog_engine.set_changelog(merged_log) 
                         project = changelog_engine.apply_changes(project_snapshot) # apply changes in the mergelog to the project
-                        project_snapshot = copy.deepcopy(project) # create a new snapshot
-
+                    
                         # ---------- SAVE PROJECT AND RESTART THE USER'S FL STUDIO ---------- #
-                        pyflp.save(project, "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp") # save project
-
-                        screenshot = pg.screenshot() # create a screenshot of the users screen to have a more seamless restart transition
-                        screenshot_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\overlay screenshot.png"
-                        screenshot.save(screenshot_path)
-
-                        window = tk.Tk()
-                        window.attributes("-fullscreen", True, "-topmost", True)
-                        window.overrideredirect(True)
-
-                        image = Image.open(screenshot_path)
-                        photo_image = ImageTk.PhotoImage(image)
-                        label = tk.Label(window, image=photo_image)
-                        label.pack()
+                        pyflp.save(project, project_path) # save project
+                        project_snapshot = pyflp.parse(project_path) # create a new snapshot
 
                         ex_path = "C:\\Program Files\\Image-Line\\FL Studio 20\\FL64"
                         subprocess.Popen([ex_path, project_path])
                 else:
                     print("merge log failed...")
                     break
-
-                        
-
-
-
-
-                # - send input to java program to let it know to retrieve pkl file
-                # - java program retrieves the pkl file and sends it to the java server program
-                # - the server uses subprocess to call the merge algorithm which will be in ChangeLogEngine.py
-                        # problem: have to keep a "snapshot" of the file before each serialization trigger
-                    # new merged log will be created by server, and sent to client to be saved to "merged_log.pkl"
-                # retrieve mergedchangelog.pkl here
-
-
-            # time.sleep(x)
-            # change_log = change_parser.get_changelog()
-
-
-
-
-
-

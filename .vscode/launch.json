@@ -1,6 +1,20 @@
 {
     "configurations": [
         {
+            "type": "java",
+            "name": "Client",
+            "request": "launch",
+            "mainClass": "client.Client",
+            "projectName": "FL-Studio-Live_43150591"
+        },
+        {
+            "type": "java",
+            "name": "Server",
+            "request": "launch",
+            "mainClass": "server.Server",
+            "projectName": "FL-Studio-Live_43150591"
+        },
+        {
             "name": "Python Debugger: Python File",
             "type": "debugpy",
             "request": "launch",

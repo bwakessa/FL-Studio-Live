@@ -1,10 +1,83 @@
 from pyflp import Project
-from pyflp.pattern import PatternID
-from .changelog import *
-
+from pyflp.pattern import PatternID, Note, Pattern
 from itertools import zip_longest
+from datetime import datetime
+
 import pickle
-import copy
+import enum
+import ntplib
+import os
+import sys
+
+
+@enum.unique
+class ChangeType(enum.Enum):
+    INSERT = 1
+    DELETE = 2
+    UPDATE = 3
+
+class ChangeLogEntry():
+    """An entry of a ChangeLog representing a single edit of a note
+
+    Static Attributes:
+        ntp_client: client to make NTP requests. Is static so we don't spend time making one for each class instance.
+        
+    Instance Attributes:
+        change_type: The type of edit to the note in this entry
+        note: The note being edited
+        updates: the edits to <note>'s attributes; != None iff <change_type> != UPDATE
+        timestamp: the NTP time that this entry was created at; used for sort-ordering entries
+    """
+    # _ntp_client = ntplib.NTPClient()
+    change_type: ChangeType
+    pattern_name: str
+    note: Note
+    updates: dict[any, dict[any, any]]
+    timestamp: datetime
+
+    def __init__(self, change_type: ChangeType, pattern_name: str, note: Note, updates: dict[any, dict[any, any]] = None):
+        self.change_type = change_type
+        self.pattern_name = pattern_name
+        self.note = note
+        self.updates = updates
+        self.timestamp = datetime.now()
+        # try:
+        #     response = self._ntp_client.request('north-america.pool.ntp.org', version=3)
+        #     self.timestamp = datetime.utcfromtimestamp(response.tx_time)
+        # except Exception as e:
+        #     raise ntplib.NTPException("NTP request failed. {}".format(e))
+
+class ChangeLog():
+    """An append-only log of ChangeLogEntries.
+
+    Attributes:
+        _entries: The list of entries in this ChangeLog
+    """
+
+    _entries: list[ChangeLogEntry]
+
+    def __init__(self):
+        self._entries = []
+
+    def get_entries(self) -> list[ChangeLogEntry]:
+        """Return this log's entries"""
+        return self._entries
+    
+    def clear_entries(self) -> None:
+        self._entries = []
+
+    def log(self, entry: ChangeLogEntry | list[ChangeLogEntry]) -> None:
+        """Append <entry> to this ChangeLog
+
+        if <entry> is ChangeLogEntry, append to changelog.
+        if <entry> is list<ChangeLogEntry>, extend to changelog
+        """
+        if isinstance(entry, ChangeLogEntry):
+            self._entries.append(entry)
+        elif isinstance(entry, list):
+            self._entries.extend(entry)
+        else:
+            pass
 
 class ChangeLogEngine:
     """Parses between versions of an FL Studio File to find changes
@@ -175,31 +248,31 @@ class ChangeLogEngine:
             if len(v1_notes) > len(v2_notes): # deletions occurred: m = len(v1) - len(unmatched_indices) (REFER TO DOCUMENTATION FOR DEFINITION OF <m>)
                 # step 1: log len(v1) - len(v2) DELETE ChangeEntries from <unmatched_indices>, traversing backwards from its tail
                 for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v1_notes) - len(v2_notes)), -1):
-                    delete_entry = ChangeLogEntry(ChangeType.DELETE, pattern1, v1_notes[unmatched_indices[i]])
+                    delete_entry = ChangeLogEntry(ChangeType.DELETE, pattern1.name, v1_notes[unmatched_indices[i]])
                     new_change_log.log(delete_entry)
 
                 # step 2: log an UPDATE ChangeEntry for the remaining len(v2) - m = len(v2) - len(v1) + len(unmatched) unmatched notes
                 for i in range(0, len(unmatched_indices) - len(v1_notes) + len(v2_notes)):
                     updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
-                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1, v1_notes[unmatched_indices[i]], updates)
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1.name, v1_notes[unmatched_indices[i]], updates)
                     new_change_log.log(update_entry)
 
             elif len(v1_notes) < len(v2_notes): # insertions occured: m = len(v2) - len(unmatched_indices)
                 # step 1: log len(v2) - len(v1) INSERT ChangeEntries from <unmatched_indices>, traversing backwards from its tail
                 for i in range(len(unmatched_indices) - 1, len(unmatched_indices) - 1 - (len(v2_notes) - len(v1_notes)), -1):
-                    insert_entry = ChangeLogEntry(ChangeType.INSERT, pattern1, v2_notes[unmatched_indices[i]])
+                    insert_entry = ChangeLogEntry(ChangeType.INSERT, pattern1.name, v2_notes[unmatched_indices[i]])
                     new_change_log.log(insert_entry)
 
                 # step 2: log an UPDATE ChangeEntry for the remaining len(v1) - m = len(v1) - len(v2) + len(unmatched) notes
                 for i in range(0, len(unmatched_indices) - len(v2_notes) + len(v1_notes)):
                     updates = self._find_differences(v1_notes[unmatched_indices[i]], v2_notes[unmatched_indices[i]])
-                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1, v1_notes[unmatched_indices[i]], updates)
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1.name, v1_notes[unmatched_indices[i]], updates)
                     new_change_log.log(update_entry)
 
             else: # (practically) no insertions or deletions occured, only updates; len(v1) == len(v2)
                 for i in unmatched_indices:
                     updates = self._find_differences(v1_notes[i], v2_notes[i])
-                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1, v1_notes[i], updates)
+                    update_entry = ChangeLogEntry(ChangeType.UPDATE, pattern1.name, v1_notes[i], updates)
                     new_change_log.log(update_entry)
 
         self.append_changelog(new_change_log)
@@ -243,7 +316,7 @@ class ChangeLogEngine:
             # Retrieve the Notes Event of <edit.pattern>
             pattern_to_update = None
             for pattern in project_snapshot.patterns:
-                if pattern.name == edit.pattern.name:
+                if pattern.name == edit.pattern_name:
                     pattern_to_update = pattern
                     break
             notes_event = pattern_to_update.events.first(PatternID.Notes)          
@@ -266,29 +339,30 @@ class ChangeLogEngine:
                 break
         
 
-
-                    
-
-    
-    
-        
-
+temp_changelog_engine = ChangeLogEngine()
 if __name__ == "__main__":
     """The main in this file will only be called when the java server code executes this file.
        In this method is where we retrieve all the changelogs from the designated folder to be merged by ChangeLogEngine.merge_changelog()     
     """
+    # sys.modules["ChangeLogEngine"] = sys.modules["__main__"] # attempt to fix unpickling module conflict error
     logs_to_merge_folder = "C:\\Users\\wbirm\\OneDrive\\Desktop\\premerge"
+    num_files = 0
+    for path in os.listdir(logs_to_merge_folder):
+        if os.path.isfile(os.path.join(logs_to_merge_folder, path)):
+            num_files += 1
     
+    
+    # ChangeLogEngine.__module__ = "ChangeLogEngine" # attempt to fix unpickling module conflict error
+    merge_number = 0
     try:
-        temp_changelog_engine = ChangeLogEngine()
-        merge_number = 0
-        while (True): # This loop will break when it encounters an error when trying to open a file that doesnt exist
+        while merge_number < num_files:
             with open(logs_to_merge_folder + "\\log{}.pkl".format(merge_number), "rb") as f:
-                new_log = pickle.load(f)
+                new_log = pickle.load(f) 
                 temp_changelog_engine.merge_changelog(new_log)
-            merge_number += 1
+                merge_number += 1
+        
+        with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_log.pkl", "wb") as f:              
+                pickle.dump(temp_changelog_engine.get_changelog(), f)
     except FileExistsError as e:
-        print("Log {} not found. Saving merged log to Desktop...".format(merge_number))
-    finally:
-        with open("C:\\Users\\wbirm\\OneDrive\\Desktop\\merged_log.pkl", "wb") as f:
-            pickle.dump(temp_changelog_engine.get_changelog(), f)
+        print("bruh wtf")
+
