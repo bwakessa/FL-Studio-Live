@@ -1,8 +1,6 @@
 # FL Studio Live - Web Visualization
 
-An out-of-this-world web-based visualization for FL Studio Live collaborative music production.
-
-![FL Studio Live Visualization](https://i.imgur.com/example.jpg)
+A web-based visualization for FL Studio Live collaborative music production.
 
 ## Overview
 
