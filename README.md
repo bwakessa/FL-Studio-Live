@@ -46,12 +46,12 @@ So far, this project only updates piano roll patterns in real-time. Support for 
                                      |
                                      v
 +-------------------------------------------------------------------+
-|                      Web Visualization Layer                       |
-| +-------------+  +----------------+  +-------------------------+   |
-| | Flask App   |  | Socket.IO      |  | Frontend (HTML/CSS/JS)  |   |
-| | - HTTP API  |  | - Real-time    |  | - Piano Roll display    |   |
-| | - Routes    |  |   communication |  | - User interface        |   |
-| +-------------+  +----------------+  +-------------------------+   |
+|                      Web Visualization Layer                      |
+| +-------------+  +----------------+  +-------------------------+  |
+| | Flask App   |  | Socket.IO      |  | Frontend (HTML/CSS/JS)  |  |
+| | - HTTP API  |  | - Real-time    |  | - Piano Roll display    |  |
+| | - Routes    |  |  communication |  | - User interface        |  |
+| +-------------+  +----------------+  +-------------------------+  |
 +-------------------------------------------------------------------+
 ```
 
