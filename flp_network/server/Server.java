@@ -106,7 +106,7 @@ public class Server {
             this.listenForClients(threadPipe); // Separate thread for receiving incoming clients
 
             while (!this.serverSocket.isClosed()) {                
-                Socket newClient = threadPipe.poll(5, TimeUnit.SECONDS); //wait 2 seconds to dequeue new client
+                Socket newClient = threadPipe.poll(2, TimeUnit.SECONDS); //wait 2 seconds to dequeue new client
                 if (newClient != null) {
                     SocketChannel clientChannel = newClient.getChannel();
                     clientChannel.configureBlocking(false);
