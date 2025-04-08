@@ -46,7 +46,7 @@ if __name__ == "__main__":
     time.sleep(1)
     
     # ---------- START PROJECT SNAPSHOT LOOP IF CLIENT PROGRAM IS RUNNING ---------- #
-    if True: # running_successful:
+    if running_successful:
         project_path = "C:\\Users\\wbirm\\OneDrive\\Desktop\\dark melody drill.flp" # TODO
 
         project = pyflp.parse(project_path)
